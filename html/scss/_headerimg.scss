@@ -1,0 +1,11 @@
+$hero-height: 35vh;
+
+.hero-section {
+  background: url('/bioinfo_apps/etc/wallpaper sequencias.png') 50% no-repeat;
+  background-size: cover;
+  height: $hero-height;
+  text-align: center;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}

@@ -1,0 +1,232 @@
+<!doctype html>
+<html class="no-js" lang="en">
+<head>
+<?php
+/**
+ * Created by PhpStorm.
+ * User: voyceik
+ * Date: 20/05/2015
+ * Time: 15:36
+ */
+
+$dsn = 'mysql:host=localhost; dbname=db_sweep; port=3306';
+$user = 'sweep';
+$password = 'bioinfo2019';
+$options = array(PDO::ATTR_PERSISTENT => true, PDO::ATTR_CASE => PDO::CASE_LOWER);
+
+$error_message = "<script>alert('Sorry, there was a problem to upload your file. An email was send to support staff to check it and We will follow up this occurence as soon as possible.')</script>";
+$invalid_filename_message = "<script>alert('Invalid file name! You mustn\'t use file name with "."')</script>";
+$invalid_extension_message = "<script>alert('Invalid file extension! You must use .fasta, .fas or .faa (multifasta) ile extension.')</script>";
+$empty_data_message = "<script>alert('You must upload a Fasta file format')</script>";
+$file_exists_message = "<script>alert('This file is already in the queue. Please wait for the finish of processing')</script>";
+$file_uploaded_message = "<script>alert('The file was successful submitted. Use View Results to check status of all jobs submitted.')</script>";
+$invalid_email_message = "<script>alert('The email addresses you entered is not valid or your server is rejecting SMTP authentication. Please try another email account like GMail.')</script>";
+
+$name = $_POST["name"];
+$institution = $_POST["institution"];
+$email = $_POST["email"];
+$sequence = $_POST["sequence"];
+$session_id = $_SESSION['session_id'];
+$ipaddress = 'UNKNOWN';
+$total = '';
+
+if ($_SERVER['HTTP_CLIENT_IP'])
+    $ipaddress = $_SERVER['HTTP_CLIENT_IP'];
+else if($_SERVER['HTTP_X_FORWARDED_FOR'])
+    $ipaddress = $_SERVER['HTTP_X_FORWARDED_FOR'];
+else if($_SERVER['HTTP_X_FORWARDED'])
+    $ipaddress = $_SERVER['HTTP_X_FORWARDED'];
+else if($_SERVER['HTTP_FORWARDED_FOR'])
+    $ipaddress = $_SERVER['HTTP_FORWARDED_FOR'];
+else if($_SERVER['HTTP_FORWARDED'])
+    $ipaddress = $_SERVER['HTTP_FORWARDED'];
+else if($_SERVER['REMOTE_ADDR'])
+    $ipaddress = $_SERVER['REMOTE_ADDR'];
+
+if (!isset($_SESSION)){
+    session_start("data");
+    $session_id= session_id();
+    $http_referer = $_SERVER["HTTP_REFERER"];
+}
+
+if ((isset($http_referer)&&isset($session_id)==session_id())) {
+} else { session_destroy(); };
+
+?>
+<meta name="Content-type" content="text/html"; charset= utf-8 />
+<meta name="viewport" content="width=device-width, initial-scale=1,maximum-scale=1,user-scalable=no">
+<meta name="author" content="Amanda Wilczek & Ricardo Voyceik"/>
+<meta name="description" content="NTRC Application Finder"/>
+<meta name="keywords" content="bioinformatics, bioinformatica, sweep, ufpr, bioinfo, gene marking tool, gene, biology, orf, sweep, computational biology, fasta, apps ufpr bioinfo, raittz, voyceik"/>
+<meta name="robot" content="Index, Follow" />
+<meta name="HandheldFriendly" content="true">
+<link rel="apple-touch-icon" sizes="180x180" href="etc/apple-touch-icon.png">
+<link r	el="icon" type="image/png" sizes="32x32" href="etc/favicon-32x32.png">
+<link rel="icon" type="image/png" sizes="16x16" href="etc/favicon-16x16.png">
+<link rel="manifest" href="etc/site.webmanifest">
+<link rel="mask-icon" href="etc/safari-pinned-tab.svg" color="#5bbad5">
+<meta name="msapplication-TileColor" content="#000000">
+<meta name="theme-color" content="#ffffff"> 
+<meta charset="utf-8">
+<meta http-equiv="x-ua-compatible" content="ie=edge">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>SWeeP Application Tools</title>
+<link rel="stylesheet" href="css/foundation.css">
+<link rel="stylesheet" href="css/app.css">  
+<script type="text/javascript" src="app.js"></script>
+<script type="text/javascript">
+    var _gaq = _gaq || [];
+    _gaq.push(['_setAccount', 'UA-34743812-1']);
+    _gaq.push(['_trackPageview']);
+    _gaq.push(['_trackPageLoadTime']);
+
+    (function() {
+        var ga = document.createElement('script'); ga.type = 'text/javascript'; ga.async = true;
+        ga.src = ('https:' == document.location.protocol ? 'https://ssl' : 'http://www') + '.google-analytics.com/ga.js';
+        var s = document.getElementsByTagName('script')[0]; s.parentNode.insertBefore(ga, s);
+    })();
+</script>
+</head>
+<body>
+  <!-- menu -->
+  <nav class="top-bar topbar-responsive">
+    <div class="top-bar-title">
+      <a class="topbar-responsive-logo" href="sweep_upload.php"><img src="etc/logo.png" width="40%" /></a>
+  </div>
+  <div id="topbar-responsive" class="topbar-responsive-links">
+      <div class="top-bar-right">
+        <ul class="menu simple vertical medium-horizontal" data-dropdown-menu>
+          <ul class="dropdown menu" data-dropdown-menu>
+            <li><a href="sweep.php">SWeeP</a></li>
+            <li><a href="sweep_browse.php">SWeeP Databases</a></li>
+            <li><a href="sweep_upload.php">Submit SWeeP Tasks</a></li>
+            <li><a href="sweep_result.php">SWeeP Tasks Results</a></li>
+          </ul>
+        </ul>
+      </div>
+  </div>
+</nav>
+<!-- fim menu-->
+<div class="hero-section">
+ <div class="hero-section-text">
+    <h1>Submit SWeeP Tasks</h1>
+</div>
+</div>
+<div class="grid-container">
+	<div class="callout">
+		<p>
+			<b>How to use:</b>
+			<ul>
+				<li> Insert your e-mail (required) </li>
+				<li> Insert your name </li>
+				<li> Insert a subject </li>
+				<li> Select a Fasta file (.gb, .gbk, .gbff) from your computer </li>
+				<li> Submit :) </li>
+				<li> Check and download your tasks at <a href="sweep_result.php" target="_blank">SWeeP Tasks Results</a> section</li></li>
+            </ul>
+        </p>
+        <form enctype="multipart/form-data" name="sweep_upload" id="ff"  method="post" action="sweep_upload.php">
+            <div id="submit_form" style="height:auto;">
+                <label>
+                    <span>E-mail*:</span>
+                    <input type="email" placeholder="Your email" name="email" id="email" value="<?php print $email ?>" required="true">
+                </input>
+            </label>
+            <label>
+                <span>Name:</span>
+                <input type="text" data-dojo-type="dojox/mobile/TextBox" placeholder="Please inform your name" name="name" id="name" value="<?php print $name ?>">
+            </input>
+        </label>
+        <label>
+            <span>Description:</span>
+            <input type="text" data-dojo-type="dojox/mobile/TextBox" placeholder="A subject about this submission" name="institution" id="institution" value="<?php print $institution ?>">
+        </input>
+    </label>
+    <label>
+        <span>Select a Fasta file: (max 25M):</span>
+        <input type="file" name="uploaded" id="uploaded" />
+    </input>
+</label>
+<button class="button expanded" type="submit" name="Submit" value="Submit">Upload
+</button>
+</div>
+</form>
+</div>
+</div>
+
+<!-- rodape-->
+<hr>
+<div class="small-12 medium-12 small-4 cell">
+
+  <center>
+    <img src="etc/pp.jpg" height="50px" width="50px" /><br/>
+    <small-6>©2019 Bioinfo: PRPPG-UFPR</small-6></center>
+</div>
+<!-- fim rodape-->
+
+<script src="js/vendor/jquery.js"></script>
+<script src="js/vendor/what-input.js"></script>
+<script src="js/vendor/foundation.js"></script>
+<script src="js/app.js"></script>
+<script>
+    $(document).foundation();
+</script>
+<?php
+if ($_POST["Submit"]=="Submit") {
+    if (isset($_FILES['uploaded']['name'])&&($_FILES['uploaded']['name']!='')) {
+            #require_once('SMTP_validateEmail.php');
+            #$sender = 'bioinfocoord@gmail.com';
+            #$SMTP_Validator = new SMTP_validateEmail();
+            #$SMTP_Validator->debug = false;
+            #$results = $SMTP_Validator->validate(array($email), $sender);
+            #if ($results[$email]) {
+        $target = "uploads/".$session_id.'_';
+        $filename = basename( $_FILES['uploaded']['name']);
+        $target = $target.$filename;
+        $ok=1;
+        foreach (count_chars($data, 1) as $i => $val) {
+            if (($i=='46')&&($val>1)) {
+                $ok=0;
+            }
+        }
+        if (!$ok) {
+         $message=$invalid_filename;
+     } elseif (eregi(".fasta$", $_FILES['uploaded']['name']) or eregi(".fas$", $_FILES['uploaded']['name']) or eregi(".faa$", $_FILES['uploaded']['name'])) {
+
+        if (move_uploaded_file($_FILES['uploaded']['tmp_name'], $target)) {
+            try {
+                $db = new PDO($dsn, $user, $password, $options);
+                $sql = "SELECT * FROM task WHERE type = 'sweep' and filein = ('$filename') AND status in ('submitted', 'executing');";
+                $check = $db->query($sql);
+                if ($check->rowCount()==0) {
+                    $sql = "INSERT INTO db_sweep.task (type, filein, status, user_id, start_date, name, description, email, institution) VALUES ('sweep', '$filename', 'submitted', '$session_id', now(), '$name', '$institution', '$email', '$ipaddress')";
+                    $execute = $db->exec($sql);
+                    $message=$file_uploaded_message;
+                } else {
+                    $message=$file_exists_message;
+                }
+                $db = null;
+            }
+            catch (PDOException $e) {
+                $message=$error_message;
+            }
+        }
+        else {
+            $message=$error_message;
+        }
+    }
+    else {
+        $message=$invalid_extension_message;
+    }
+            #} else {
+            #    $message=$invalid_email_message;
+            #    $email = '';
+            #}
+} else {
+    $message=$empty_data_message;
+}
+}
+if ($message!='') print $message;
+?>
+</body>
+</html>

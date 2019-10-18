@@ -19,6 +19,9 @@ Then move the folder html to default www folder of your apache (httpd) instalati
 ```bash
 mv html /var/www
 mv sweepd /var
+mkdir /var/www/databases
+mkdir /var/www/downloads
+mkdir /var/www/finished
 ```
 
 Download pre-formated [SWeeP Databases](http://sweep.appsbio.info/sweep_browse.php) and run appropriate SQL scripts from download sql folder.
